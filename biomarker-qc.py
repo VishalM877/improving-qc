@@ -224,4 +224,18 @@ def main() -> None:
     args = parser.parse_args()
 
     if not args.tsv.exists():
-        sys.
+        sys.exit(f"File not found: {args.tsv}")
+
+    report = run_qc(args.tsv)
+    report.print_summary()
+
+    if args.report:
+        report.write(args.report)
+        print(f"Report written to {args.report}")
+
+    errors = sum(1 for i in report.issues if i["level"] == "ERROR")
+    sys.exit(1 if errors else 0)
+
+
+if __name__ == "__main__":
+    main()
