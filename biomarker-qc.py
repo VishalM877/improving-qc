@@ -19,7 +19,6 @@ import csv
 import sys
 import argparse
 from pathlib import Path
-from typing import Optional, List, Dict, Set, Tuple
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +26,7 @@ from typing import Optional, List, Dict, Set, Tuple
 # ---------------------------------------------------------------------------
 
 # Fields that must be non-empty on every row
-REQUIRED_FIELDS: List[str] = [
+REQUIRED_FIELDS: list[str] = [
     "biomarker_id",
     "biomarker",
     "assessed_biomarker_entity",
@@ -48,9 +47,9 @@ EVIDENCE_SOURCE_DELIMITER = ":"
 
 class QCReport:
     def __init__(self) -> None:
-        self.issues: List[dict] = []
+        self.issues: list[dict] = []
 
-    def add(self, level: str, row: Optional[int], field: Optional[str], message: str) -> None:
+    def add(self, level: str, row: int | None, field: str | None, message: str) -> None:
         self.issues.append({
             "level": level,        # "ERROR" | "WARNING" | "INFO"
             "row": row,
@@ -58,13 +57,13 @@ class QCReport:
             "message": message,
         })
 
-    def error(self, message: str, row: Optional[int] = None, field: Optional[str] = None) -> None:
+    def error(self, message: str, row: int | None = None, field: str | None = None) -> None:
         self.add("ERROR", row, field, message)
 
-    def warning(self, message: str, row: Optional[int] = None, field: Optional[str] = None) -> None:
+    def warning(self, message: str, row: int | None = None, field: str | None = None) -> None:
         self.add("WARNING", row, field, message)
 
-    def info(self, message: str, row: Optional[int] = None, field: Optional[str] = None) -> None:
+    def info(self, message: str, row: int | None = None, field: str | None = None) -> None:
         self.add("INFO", row, field, message)
 
     def print_summary(self, file=sys.stdout) -> None:
@@ -92,7 +91,7 @@ class QCReport:
 # 1. Required-field completeness
 # ---------------------------------------------------------------------------
 
-def check_required_fields(rows: List[dict], report: QCReport) -> None:
+def check_required_fields(rows: list[dict], report: QCReport) -> None:
     """Flag rows where a required field is missing or blank."""
     for row_num, row in enumerate(rows, start=2):  # row 1 = header
         for field in REQUIRED_FIELDS:
@@ -106,10 +105,10 @@ def check_required_fields(rows: List[dict], report: QCReport) -> None:
 
 # ---------------------------------------------------------------------------
 # 2 & 3. Name-vs-ID consistency checks
-#          (condition name, assessed biomarker entity name)
+#         (condition name, assessed biomarker entity name)
 # ---------------------------------------------------------------------------
 
-def check_name_id_consistency(rows: List[dict], report: QCReport) -> None:
+def check_name_id_consistency(rows: list[dict], report: QCReport) -> None:
     """Detect rows where the same ID is paired with different display names.
 
     Groups rows by ID and flags whenever the associated name varies — which
@@ -130,8 +129,8 @@ def check_name_id_consistency(rows: List[dict], report: QCReport) -> None:
     ]
 
     for id_field, name_field in checks:
-        id_to_names: Dict[str, Set[str]] = {}
-        id_to_rows: Dict[str, List[int]] = {}
+        id_to_names: dict[str, set[str]] = {}
+        id_to_rows: dict[str, list[int]] = {}
 
         for row_num, row in enumerate(rows, start=2):
             id_val   = row.get(id_field, "").strip()
@@ -155,7 +154,7 @@ def check_name_id_consistency(rows: List[dict], report: QCReport) -> None:
 # 4. Evidence-source format
 # ---------------------------------------------------------------------------
 
-def check_evidence_sources(rows: List[dict], report: QCReport) -> None:
+def check_evidence_sources(rows: list[dict], report: QCReport) -> None:
     """Verify evidence_source entries follow DATABASE:ACCESSION format."""
     for row_num, row in enumerate(rows, start=2):
         src = row.get("evidence_source", "").strip()
@@ -175,9 +174,9 @@ def check_evidence_sources(rows: List[dict], report: QCReport) -> None:
 # 5. Duplicate row detection
 # ---------------------------------------------------------------------------
 
-def check_duplicates(rows: List[dict], report: QCReport) -> None:
+def check_duplicates(rows: list[dict], report: QCReport) -> None:
     """Flag exact duplicate rows (ignoring leading/trailing whitespace)."""
-    seen: Dict[Tuple, int] = {}
+    seen: dict[tuple, int] = {}
     for row_num, row in enumerate(rows, start=2):
         key = tuple(sorted((k, v.strip()) for k, v in row.items()))
         if key in seen:
